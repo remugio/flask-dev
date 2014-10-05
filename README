@@ -1,0 +1,4 @@
+Finn's dev environment for the backend.
+
+I'm using virtualenv on the dev side, so you'll want to
+install that along with Flask and Python.
