@@ -2,3 +2,16 @@ Finn's dev environment for the backend.
 
 I'm using virtualenv on the dev side, so you'll want to
 install that along with Flask and Python.
+
+Dependencies
+------------
+Flask-0.10.1
+Flask_MySQL-1.2
+Flask_Bcrypt-0.6.0
+
+DB Requirements
+---------------
+port = 3306
+db/schema name = flaskr
+db user = admin
+db pw = default
