@@ -11,18 +11,19 @@ Integrates Flask, Tornado's websockets, and SockJS for graceful degradation
 3. Run 'vagrant up'
 4. Navigate to http://localhost:8089 in your browser to view the tornado app
 
-![Screenshot](https://raw.githubusercontent.com/campusdebate/flask-tornado-websockets-sample/master/screenshot.png)
+![Screenshot1](https://raw.githubusercontent.com/campusdebate/flask-tornado-websockets-sample/master/screenshot1.png)
+![Screenshot2](https://raw.githubusercontent.com/campusdebate/flask-tornado-websockets-sample/master/screenshot2.png)
 
 
 Dependencies
 ------------
-Flask-0.10.1
-Flask_MySQL-1.2
-Flask_Bcrypt-0.6.0
+ - Flask-0.10.1
+ - Flask_MySQL-1.2
+ - Flask_Bcrypt-0.6.0
 
 DB Requirements
 ---------------
-port = 3306
-db/schema name = flaskr
-db user = admin
-db pw = default
+ - port = 3306
+ - db/schema name = flaskr
+ - db user = admin
+ - db pw = default
