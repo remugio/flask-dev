@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"></style>
+  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/sockjs-client/0.3.4/sockjs.min.js"></script>
+
+  <script>
+
+  var vid="NWu8-gUidAI"
+  
+  var player,
+  tag = document.createElement('script'),
+  firstScriptTag = document.getElementsByTagName('script')[0];
+
+  tag.src = "https://www.youtube.com/iframe_api";
+  firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+  function onPlaybackQualityChange(event) {
+    console.log(event);
+  }
+
+  function onPlayerStateChange(event) {
+    console.log(event);
+  }
+
+  function onReady(event) {
+    function logDuration() {
+      $("#position").text(player.getCurrentTime());
+      $("#duration").text(player.getDuration());
+      window.setTimeout(logDuration, 1000);
+    }
+    
+    logDuration();
+    
+    console.log(event);
+//    player.loadVideoById("OEtzyDNbwes", 0);
+player.playVideo();
+}
+
+function onError(event) {
+  console.log(event);
+}
+
+window.onYouTubeIframeAPIReady = function onYouTubeIframeAPIReady() {
+  console.log("IFRAME API READY!");
+  player = new YT.Player("wooot", {
+    height: 270,
+    width: 480,
+    videoId: vid,
+    playerVars: {
+      controls: 0,
+            iv_load_policy: 3 // Disables annotations.
+          },
+          events: {
+            "onReady": onReady,
+            "onStateChange": onPlayerStateChange,
+            "onPlaybackQualityChange": onPlaybackQualityChange,
+            "onError": onError
+          }
+        });
+};
+
+var myPlayerState;
+function onPlayerStateChange(event) {
+  if (event.data == YT.PlayerState.PLAYING) {
+    console.log("Playing!");
+  };
+  if (event.data == YT.PlayerState.PAUSED) {
+    console.log("Paused!");
+  }
+  myPlayerState = event.data;
+  console.log(myPlayerState);
+};
+
+
+$(function() {
+  var conn = null;
+  var curvote=null;
+
+  function log(msg) {
+    var control = $('#log');
+    control.html(control.html() + msg + '<br/>');
+    control.scrollTop(control.scrollTop() + 1000);
+  }
+
+  function connect() {
+    disconnect();
+
+
+    conn = new SockJS('http://' + window.location.host + '/chat');
+
+    log('Connecting...');
+
+    conn.onopen = function() {
+      log('Connected.');
+      update_ui();
+    };
+
+    conn.onmessage = function(e) {
+      log(e.data);
+    };
+
+    conn.onclose = function() {
+      log('Disconnected.');
+      conn = null;
+      update_ui();
+    };
+  }
+
+  function disconnect() {
+    if (conn != null) {
+      log('Disconnecting...');
+
+      conn.close();
+      conn = null;
+
+      update_ui();
+    }
+  }
+
+  function update_ui() {
+    var msg = '';
+
+    if (conn == null || conn.readyState != SockJS.OPEN) {
+      $('#status').text('disconnected');
+      $('#connect').text('Connect');
+    } else {
+      $('#status').text('connected (' + conn.protocol + ')');
+      $('#connect').text('Disconnect');
+    }
+  }
+
+  window.onload = function() {
+    if (conn == null) {
+      connect();
+    } else {
+      disconnect();
+    }
+
+    update_ui();
+    return false;
+
+  };
+
+  $('#connect').click(function() {
+    if (conn == null) {
+      connect();
+    } else {
+      disconnect();
+    }
+
+    update_ui();
+    return false;
+  });
+
+  $('#upvote').click(function() {
+    if (myPlayerState != 1) {
+      bootstrap_alert.warning('The video must be playing in order to vote!');
+    } else{
+      conn.send(JSON.stringify({"vote": 'up', "time": player.getCurrentTime()}));
+    };
+    return false;
+  });
+  $('#downvote').click(function() {
+    if (myPlayerState != 1) {
+      bootstrap_alert.warning('The video must be playing in order to vote!');
+    } else{
+      conn.send(JSON.stringify({"vote": 'down', "time": player.getCurrentTime()}));
+    };
+    return false;
+  });
+
+  $('form').submit(function() {
+    var text = $('#text').val();
+    log('Sending: ' + text);
+    conn.send(text);
+    $('#text').val('').focus();
+    return false;
+  });
+});
+
+$( document ).ready(function() {
+  console.log( "ready!" );
+  bootstrap_alert = function() {};
+  bootstrap_alert.warning = function(message) {
+    $('#alert_placeholder').html('<div class="alert alert-danger alert-dismissable"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button><span>'+message+'</span></div>');
+  };
+
+});
+
+</script>
+
+<style>
+
+body{
+  background-color: #e5e5e5
+}
+
+.col-md-6, .col-md-10 {
+  background-color: #fff;
+  margin-bottom: 36px;
+  padding: 20px;
+  border-radius: 5px;
+}
+
+
+</style>
+
+<style>
+
+.embed-container { 
+  position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; height: auto; 
+} 
+
+.embed-container iframe, .embed-container object, .embed-container embed {
+ position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+}
+</style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="row clearfix center-block">
+      <div class="col-md-offset-3 col-md-6">
+        <h2>
+          Status: <span id="status">disconnected</span><br>
+          <a id="connect" href="#">Connect</a>
+        </h2>
+        <p>
+          Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Etiam porta sem malesuada magna mollis euismod. Donec sed odio dui.
+        </p>
+        <div id="log" style="width: 100%; height: 7em; overflow:auto; border: 1px solid black"></div>
+        <div class='embed-container'> <div id="wooot"></div></div>
+        <div id="upvote"><h2><span class="label label-success">Upvote</h2></span></div>
+        <div id="downvote"><h2><span class="label label-danger">Downvote</span></h2></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>
