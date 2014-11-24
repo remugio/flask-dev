@@ -1,0 +1,5 @@
+Tornado>=2.1.1
+Flask
+sockjs-tornado
+flask-mysql
+flask-bcrypt
