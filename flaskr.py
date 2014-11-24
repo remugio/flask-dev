@@ -1,4 +1,4 @@
-import user
+import cd_user, cd_session
 from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash
 from contextlib import closing
@@ -37,12 +37,15 @@ def show_entries():
     cur = g.db.cursor()
     cur.execute('SELECT title, text FROM entries ORDER BY id DESC')
     entries = [dict(title=row[0], text=row[1]) for row in cur.fetchall()]
-    return render_template('show_entries.html', entries=entries)
+    curr_user = get_logged_in_user(session)
+    logged_in = curr_user is not None
+    return render_template('show_entries.html', entries=entries, logged_in=logged_in)
 
 # create an entry
 @app.route('/add', methods=['POST'])
 def add_entry():
-    if not session.get('logged_in'):
+    curr_user = get_logged_in_user(session)
+    if curr_user is None:
         abort(401)
     g.db.cursor().execute('INSERT INTO entries (title, text) values (%s, %s)', [request.form['title'], request.form['text']])
     g.db.commit()
@@ -57,11 +60,11 @@ def create_user():
         # TODO validation
         username = request.form['username']
         password = request.form['password']
-        if user.username_taken(g.db, username):
+        if cd_user.username_taken(g.db, username):
             error = 'Username taken'
         else:
             passhash = pass_hash(password)
-            user.create(g.db, username, passhash)
+            cd_user.create(g.db, username, passhash)
             flash('User account created')
             return redirect(url_for('login'))
     return render_template('create_user.html', error=error)
@@ -73,20 +76,27 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        curr_user = user.get_one_by_username(g.db, username)
+        curr_user = cd_user.get_one_by_username(g.db, username)
         if curr_user is None:
-            error = 'No user!!!'
+            error = 'Invalid username or password'
         elif not pass_match(password, curr_user.passhash):
             error = 'Invalid username or password'
         else:
-            session['logged_in'] = True
+            # create a session for this user
+            session_token = cd_session.create(g.db, curr_user.username)
+            session['username'] = curr_user.username
+            session['session_token'] = session_token
             flash('You were logged in')
             return redirect(url_for('show_entries'))
     return render_template('login.html', error=error)
 
 @app.route('/logout')
 def logout():
-    session.pop('logged_in', None)
+    curr_user = get_logged_in_user(session)
+    session.pop('username', None)
+    session.pop('session_token', None)
+    if curr_user is not None:
+        cd_session.delete_all_by_username(g.db, curr_user.username)
     flash('You were logged out')
     return redirect(url_for('show_entries'))
 
@@ -100,6 +110,14 @@ def pass_hash(password):
 
 def pass_match(password, passhash):
     return bcrypt.check_password_hash(passhash, password)
+
+def get_logged_in_user(curr_session):
+    username = session.get('username', None)
+    session_token = session.get('session_token', None)
+    if username is None or session_token is None:
+        return None
+    curr_user = cd_user.get_one_by_username(g.db, username)
+    return curr_user if cd_session.is_valid_token(g.db, username, session_token) else None
 
 ##############
 # DB helpers #
